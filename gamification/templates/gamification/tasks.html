@@ -1,0 +1,44 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Задания{% endblock %}
+{% block content %}
+    <h2>🎯 Задания</h2>
+    
+    {% if messages %}
+    <div style="margin-bottom: 20px;">
+        {% for message in messages %}
+        <div style="padding: 10px; background: {% if message.tags == 'error' %}#ffcdd2{% else %}#c8e6c9{% endif %}; border-radius: 8px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if tasks %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for task in tasks %}
+        <div class="card">
+            <h3>{{ task.title }}</h3>
+            <p>{{ task.description }}</p>
+            <p><strong>Награда:</strong> {{ task.stars_reward }} ⭐</p>
+            <p><strong>Тип:</strong> 
+                {% if task.task_type == 'daily' %}Ежедневное
+                {% elif task.task_type == 'weekly' %}Еженедельное
+                {% else %}Разовое{% endif %}
+            </p>
+            
+            <form method="post" action="{% url 'gamification:complete_task' task.id %}">
+                {% csrf_token %}
+                <button type="submit" style="background: #6a1b9a; color: white; border: none; padding: 8px 15px; border-radius: 6px; width: 100%;">
+                    Выполнить
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 30px;">
+        <p>Пока нет заданий.</p>
+        <img src="https://img.icons8.com/ios/100/000000/task--v1.png" alt="🎯" style="width: 80px; opacity: 0.3;">
+    </div>
+    {% endif %}
+{% endblock %}

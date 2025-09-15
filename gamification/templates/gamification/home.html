@@ -1,0 +1,29 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+    <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #b388ff, #8c9eff); border-radius: 16px; color: white;">
+        <h2 style="font-size: 2.5em;">Добро пожаловать в Геймификацию КЦ!</h2>
+        <p style="font-size: 1.2em; margin: 20px 0;">
+            Выполняй задания, получай звёзды и обменивай их на крутые призы!
+        </p>
+        <img src="https://img.icons8.com/emoji/96/000000/star-emoji.png" alt="⭐" style="width: 60px;">
+    </div>
+
+    <div style="margin-top: 40px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
+        <div class="card" style="flex: 1; min-width: 250px; text-align: center;">
+            <h3>🎯 Задания</h3>
+            <p>Выполняй задачи и получай награды</p>
+            <a href="{% url 'gamification:index' %}" class="btn-home">Перейти</a>
+        </div>
+        <div class="card" style="flex: 1; min-width: 250px; text-align: center;">
+            <h3>⭐ Личный кабинет</h3>
+            <p>Следи за своим прогрессом и звёздами</p>
+            <a href="{% url 'gamification:profile' %}" class="btn-home">Перейти</a>
+        </div>
+        <div class="card" style="flex: 1; min-width: 250px; text-align: center;">
+            <h3>🎁 Магазин призов</h3>
+            <p>Обменивай звёзды на подарки</p>
+            <a href="{% url 'gamification:shop' %}" class="btn-home">Перейти</a>
+        </div>
+    </div>
+{% endblock %}

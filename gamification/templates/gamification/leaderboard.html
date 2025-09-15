@@ -1,0 +1,44 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Таблица лидеров{% endblock %}
+{% block content %}
+    <h2>🏆 Таблица лидеров</h2>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #e1bee7;">
+                    <th style="padding: 12px; text-align: left; width: 10%;">Место</th>
+                    <th style="padding: 12px; text-align: left;">Сотрудник</th>
+                    <th style="padding: 12px; text-align: right; width: 20%;">Звёзды</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in leaders %}
+                <tr class="card" style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px; font-weight: bold; color: #6a1b9a;">
+                        {{ forloop.counter }}{% if forloop.counter == 1 %} 🥇{% elif forloop.counter == 2 %} 🥈{% elif forloop.counter == 3 %} 🥉{% endif %}
+                    </td>
+                    <td style="padding: 12px;">
+                        {{ profile.user.get_full_name|default:profile.user.username }}
+                    </td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; color: #ff6f00;">
+                        {{ profile.stars }} ⭐
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px; color: #757575;">
+                        Нет данных для отображения
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 30px; background: #f5f0ff; padding: 20px; border-radius: 12px;">
+        <h3>ℹ️ Как попасть в топ?</h3>
+        <p>• Выполняйте больше заданий в разделе <a href="{% url 'gamification:index' %}">"Задания"</a></p>
+        <p>• Участвуйте в батлах и побеждайте</p>
+        <p>• Следите за обновлениями в уведомлениях</p>
+    </div>
+{% endblock %}

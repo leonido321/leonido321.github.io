@@ -1,0 +1,150 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Батлы{% endblock %}
+{% block content %}
+    <h2>⚔️ Активные батлы</h2>
+    
+    {% if active_battles %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for battle in active_battles %}
+        <div class="card">
+            <h3>{{ battle.name }}</h3>
+            <p><strong>Тип:</strong> {{ battle.battle_type.name }}</p>
+            <p><strong>Время:</strong> {{ battle.start_time|date:"d.m H:i" }} - {{ battle.end_time|date:"d.m H:i" }}</p>
+            <p><strong>Участников:</strong> {{ battle.participants.count }}</p>
+            
+            <!-- Таймер до окончания батла -->
+            <div style="background: #ffe082; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                <strong>Осталось:</strong> <span id="timer-{{ battle.id }}">Загрузка...</span>
+            </div>
+
+            {% if user in battle.participants.all %}
+                {% if battle.user_result %}
+                    <div style="background: #e1bee7; padding: 10px; border-radius: 8px; margin-top: 10px;">
+                        <strong>Ваш результат:</strong> {{ battle.user_result.score }} очков
+                    </div>
+                {% else %}
+                    <p style="color: #6a1b9a; font-weight: bold;">Вы участвуете!</p>
+                {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 30px;">
+        <p>Нет активных батлов в данный момент</p>
+        <img src="https://img.icons8.com/ios/100/000000/swords.png" alt="⚔️" style="width: 80px; opacity: 0.3;">
+    </div>
+    {% endif %}
+
+    {% if upcoming_battles %}
+    <h2 style="margin-top: 40px;">⏰ Предстоящие батлы</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for battle in upcoming_battles %}
+        <div class="card" style="opacity: 0.8;">
+            <h3>{{ battle.name }}</h3>
+            <p><strong>Начало:</strong> {{ battle.start_time|date:"d.m H:i" }}</p>
+            <p><strong>Продолжительность:</strong> {{ battle.end_time|timeuntil:battle.start_time }}</p>
+            <p><strong>Участников:</strong> {{ battle.participants.count }}</p>
+            
+            <!-- Таймер до старта батла -->
+            <div style="background: #a5d6a7; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                <strong>Старт через:</strong> <span id="countdown-{{ battle.id }}">Загрузка...</span>
+            </div>
+            
+            <form method="post" action="{% url 'gamification:join_battle' battle.id %}">
+                {% csrf_token %}
+                <button type="submit" style="background: #7b1fa2; color: white; border: none; padding: 8px 15px; border-radius: 6px; width: 100%;">
+                    Записаться
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if completed_battles %}
+    <h2 style="margin-top: 40px;">🏆 Завершённые батлы</h2>
+    {% for battle in completed_battles %}
+    <div class="card">
+        <h3>{{ battle.name }}</h3>
+        <p><strong>Дата:</strong> {{ battle.start_time|date:"d.m.Y" }}</p>
+        <p><strong>Топ-3:</strong></p>
+        <ol>
+            {% for result in battle.battleresult_set.all|slice:":3" %}
+            <li>
+                {{ result.user.get_full_name|default:result.user.username }} — 
+                {{ result.score }} очков 
+                {% if forloop.counter == 1 %} 🥇{% elif forloop.counter == 2 %} 🥈{% elif forloop.counter == 3 %} 🥉{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+        <a href="{% url 'gamification:leaderboard' %}" class="btn-home" style="background: #5e35b1; margin-top: 10px; display: inline-block;">
+            Посмотреть таблицу лидеров
+        </a>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- СКРИПТЫ ТОЛЬКО В КОНЦЕ -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Таймеры для предстоящих батлов (до старта)
+            {% for battle in upcoming_battles %}
+            (function() {
+                const countdownEl = document.getElementById('countdown-{{ battle.id }}');
+                if (!countdownEl) return;
+
+                const end = new Date("{{ battle.start_time|date:'c' }}").getTime();
+
+                const timer = setInterval(function() {
+                    const now = new Date().getTime();
+                    const distance = end - now;
+
+                    if (distance < 0) {
+                        clearInterval(timer);
+                        countdownEl.textContent = "Батл начался!";
+                        location.reload();
+                        return;
+                    }
+
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    countdownEl.textContent = `${days}д ${hours}ч ${minutes}м ${seconds}с`;
+                }, 1000);
+            })();
+            {% endfor %}
+
+            // Таймеры для активных батлов (до окончания)
+            {% for battle in active_battles %}
+            (function() {
+                const timerEl = document.getElementById('timer-{{ battle.id }}');
+                if (!timerEl) return;
+
+                const end = new Date("{{ battle.end_time|date:'c' }}").getTime();
+
+                const interval = setInterval(function() {
+                    const now = new Date().getTime();
+                    const distance = end - now;
+
+                    if (distance < 0) {
+                        clearInterval(interval);
+                        timerEl.textContent = "Батл завершён!";
+                        location.reload();
+                        return;
+                    }
+
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    timerEl.textContent = `${days}д ${hours}ч ${minutes}м ${seconds}с`;
+                }, 1000);
+            })();
+            {% endfor %}
+        });
+    </script>
+{% endblock %}  <!-- ЭТОТ ТЕГ БЫЛ ПРОПУЩЕН! -->

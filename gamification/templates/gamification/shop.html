@@ -1,0 +1,46 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Магазин призов{% endblock %}
+{% block content %}
+    <h2>🎁 Магазин призов</h2>
+    
+    {% if messages %}
+    <div style="margin-bottom: 20px;">
+        {% for message in messages %}
+        <div style="padding: 10px; background: {% if message.tags == 'error' %}#ffcdd2{% else %}#c8e6c9{% endif %}; border-radius: 8px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if prizes %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for prize in prizes %}
+        <div class="card">
+            <h3>{{ prize.name }}</h3>
+            <p>{{ prize.description }}</p>
+            <p><strong>Цена:</strong> {{ prize.cost_in_stars }} ⭐</p>
+            
+            <form method="post" action="{% url 'gamification:purchase_prize' prize.id %}">
+                {% csrf_token %}
+                <button type="submit" 
+                        style="background: {% if profile.stars >= prize.cost_in_stars %}#6a1b9a{% else %}#b0bec5{% endif %}; 
+                               color: white; 
+                               border: none; 
+                               padding: 10px 15px; 
+                               border-radius: 6px; 
+                               width: 100%;"
+                        {% if profile.stars < prize.cost_in_stars %}disabled{% endif %}>
+                    Купить
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 30px;">
+        <p>Пока нет призов.</p>
+        <img src="https://img.icons8.com/ios/100/000000/gift--v1.png" alt="🎁" style="width: 80px; opacity: 0.3;">
+    </div>
+    {% endif %}
+{% endblock %}

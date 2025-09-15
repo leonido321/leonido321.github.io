@@ -1,0 +1,11 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Вход в систему{% endblock %}
+{% block content %}
+    <h2>🔒 Вход в систему</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Логин" required><br>
+        <input type="password" name="password" placeholder="Пароль" required><br>
+        <button type="submit" style="background: #6a1b9a; color: white; padding: 10px 20px; border: none; border-radius: 8px;">Войти</button>
+    </form>
+{% endblock %}

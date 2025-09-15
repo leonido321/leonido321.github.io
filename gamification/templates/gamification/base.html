@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Геймификация КЦ — {% block title %}{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #7b4397, #dc2430);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        header {
+            background: #6a1b9a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px 12px 0 0;
+            margin: -30px -30px 30px -30px;
+            background: linear-gradient(90deg, #8e24aa, #1e88e5);
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        .notifications {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #ff5252;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+        .notifications:hover + .notification-bubble {
+            display: block;
+        }
+        .notification-bubble {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        .notification-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        .notification-item:hover {
+            background: #f5f0ff;
+        }
+
+        /* Отображение группы */
+        .user-group {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            font-size: 0.9em;
+            color: #e1bee7;
+            text-align: right;
+        }
+        .user-group strong {
+            color: white;
+        }
+
+        nav {
+            background: #5e35b1;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: transform 0.2s;
+        }
+        nav a:hover {
+            transform: scale(1.05);
+        }
+        .btn-home {
+            background: #7b1fa2;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .btn-home:hover {
+            background: #4a148c;
+        }
+        .btn-back {
+            background: #4a148c;
+            margin-left: 15px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f9f4ff;
+            box-shadow: 0 4px 10px rgba(138, 43, 226, 0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #6a1b9a;
+        }
+        .stars {
+            font-size: 1.4em;
+            color: #ff6f00;
+            font-weight: bold;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: white;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        /* Уведомления в правом верхнем углу */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast {
+            position: relative;
+            background: #4CAF50;
+            color: white;
+            opacity: 1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from {right: -300px;}
+            to {right: 20px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 ГЕЙМИФИКАЦИЯ КЦ</h1>
+            {% if user.is_authenticated %}
+                <a href="{% url 'gamification:notifications' %}" class="notifications">
+                    {{ notifications.count }}
+                </a>
+                <div class="notification-bubble">
+                    {% for notification in notifications %}
+                    <a href="{% url 'gamification:notifications' %}" class="notification-item">
+                        <strong>{{ notification.title }}</strong><br>
+                        <small>{{ notification.created_at|date:"d.m H:i" }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <!-- Отображение группы пользователя -->
+                <div class="user-group">
+                    {% with profile=user.userprofile %}
+                        {% if profile.group %}
+                            Группа: <strong>{{ profile.group.name }}</strong>
+                        {% else %}
+                            Группа: <strong>Не назначена</strong>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            {% endif %}
+        </header>
+
+        <nav>
+            <a href="{% url 'gamification:home' %}">🏠 Главная</a>
+            <a href="{% url 'gamification:index' %}">🎯 Задания</a>
+            <a href="{% url 'gamification:profile' %}">⭐ Мой кабинет</a>
+            <a href="{% url 'gamification:shop' %}">🎁 Магазин</a>
+            <a href="{% url 'gamification:battles' %}">⚔️ Батлы</a>
+            <a href="{% url 'gamification:leaderboard' %}">🏆 Лидеры</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}">🚪 Выход</a>
+            {% endif %}
+        </nav>
+
+        <a href="{% url 'gamification:home' %}" class="btn-home">← На главную</a>
+        <a href="#" onclick="window.history.back(); return false;" class="btn-home btn-back">← Назад</a>
+
+        {% block content %}{% endblock %}
+
+        <footer>
+            &copy; 2025 Геймификация Контакт-центра | Разработано с 💜 и фиолетовой магией
+        </footer>
+    </div>
+
+    <!-- Уведомления -->
+    <div class="toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

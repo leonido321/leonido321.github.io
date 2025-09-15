@@ -1,0 +1,29 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Уведомления{% endblock %}
+{% block content %}
+    <h2>🔔 Уведомления</h2>
+    
+    {% if notifications %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for notification in notifications %}
+        <div class="card">
+            <h3>{{ notification.title }}</h3>
+            <p>{{ notification.message }}</p>
+            <small style="color: #6a1b9a;">{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+            
+            {% if notification.battle %}
+                <div style="margin-top: 10px; padding: 10px; background: #f5f0ff; border-radius: 8px;">
+                    <strong>Батл:</strong> {{ notification.battle.name }}<br>
+                    <small>{{ notification.battle.start_time|date:"d.m H:i" }} - {{ notification.battle.end_time|date:"d.m H:i" }}</small>
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 30px;">
+        <p>Нет активных уведомлений</p>
+        <img src="https://img.icons8.com/ios/100/000000/bell--v1.png" alt="🔔" style="width: 80px; opacity: 0.3;">
+    </div>
+    {% endif %}
+{% endblock %}

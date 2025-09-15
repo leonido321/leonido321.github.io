@@ -1,0 +1,57 @@
+{% extends 'gamification/base.html' %}
+{% load math_filters %}  <!-- ДОБАВЛЕНО: загружаем кастомные фильтры -->
+{% block title %}Мой кабинет{% endblock %}
+{% block content %}
+    <h2>⭐ Мой кабинет</h2>
+    <p><strong>Имя:</strong> {{ user.get_full_name|default:user.username }}</p>
+    <p><strong>Группа:</strong> 
+        {% if profile.group %}
+            {{ profile.group.name }}
+        {% else %}
+            Не указана
+        {% endif %}
+    </p>
+    <p><strong>Текущий счёт:</strong> <span style="font-size: 1.5em;">{{ profile.stars }} ⭐</span></p>
+
+    <!-- Прогресс до следующего уровня -->
+    {% if progress %}
+    <div style="margin: 20px 0; padding: 15px; background: #e1bee7; border-radius: 8px;">
+        <h3>🚀 Ваш уровень</h3>
+        <p><strong>Текущий уровень:</strong> 
+            {% if progress.current_level %}
+                {{ progress.current_level.name }}
+            {% else %}
+                Новичок
+            {% endif %}
+        </p>
+        
+        <!-- Прогресс-бар -->
+        {% if next_level %}
+        <div style="background: #ddd; height: 20px; border-radius: 10px; margin: 10px 0; overflow: hidden;">
+            {% with progress_percent=progress.stars_earned|div:next_level.stars_required|mul:100 %}
+            <div style="width: {{ progress_percent }}%; background: #6a1b9a; height: 100%; text-align: center; color: white; line-height: 20px; font-size: 0.8em;">
+                {{ progress.stars_earned }} / {{ next_level.stars_required }} ⭐
+            </div>
+            {% endwith %}
+        </div>
+        <p style="margin: 5px 0;"><strong>До следующего уровня:</strong> {{ next_level.name }} (ещё {{ next_level.stars_required|add:progress.stars_earned|mul:"-1" }} ⭐)</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h3>🛒 Мои покупки:</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+        {% for purchase in purchased_prizes %}
+        <div class="card">
+            <h4>{{ purchase.prize.name }}</h4>
+            <p>{{ purchase.prize.description }}</p>
+            <p><strong>Дата покупки:</strong> {{ purchase.purchased_at|date:"d.m.Y H:i" }}</p>
+        </div>
+        {% empty %}
+        <div class="card" style="text-align: center; padding: 20px;">
+            <p>У вас пока нет призов.</p>
+            <img src="https://img.icons8.com/ios/100/000000/star--v1.png" alt="⭐" style="width: 60px; opacity: 0.3;">
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}

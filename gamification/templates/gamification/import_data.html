@@ -1,0 +1,22 @@
+{% extends 'gamification/base.html' %}
+{% block title %}Импорт данных{% endblock %}
+{% block content %}
+    <h2>📥 Импорт данных эффективности</h2>
+    <p>Загрузите CSV-файл с данными по сотрудникам (формат: username,completed_tasks,quality_score)</p>
+    
+    <form method="post" enctype="multipart/form-data" style="background: #f5f0ff; padding: 20px; border-radius: 12px;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" style="background: #6a1b9a; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+            Загрузить и обработать
+        </button>
+    </form>
+    
+    <div style="margin-top: 30px; background: #e1bee7; padding: 15px; border-radius: 8px;">
+        <h3>📌 Пример файла:</h3>
+        <pre>username,completed_tasks,quality_score
+operator1,45,95
+engineer2,32,88
+operator3,50,92</pre>
+    </div>
+{% endblock %}
