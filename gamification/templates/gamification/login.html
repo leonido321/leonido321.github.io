@@ -1,11 +1,38 @@
 {% extends 'gamification/base.html' %}
-{% block title %}Вход в систему{% endblock %}
+{% block title %}Войти в систему{% endblock %}
 {% block content %}
-    <h2>🔒 Вход в систему</h2>
-    <form method="post">
-        {% csrf_token %}
-        <input type="text" name="username" placeholder="Логин" required><br>
-        <input type="password" name="password" placeholder="Пароль" required><br>
-        <button type="submit" style="background: #6a1b9a; color: white; padding: 10px 20px; border: none; border-radius: 8px;">Войти</button>
-    </form>
+    <div style="text-align: center; padding: 60px 20px;">
+        <h1>🔑 Войдите в систему</h1>
+        <p style="font-size: 1.2em; color: #555; margin-bottom: 40px;">Добро пожаловать в геймификацию КЦ!</p>
+
+        {% if messages %}
+            {% for message in messages %}
+            <div style="background: #ffebee; color: #c62828; padding: 12px; border-radius: 8px; margin: 10px auto; max-width: 400px; text-align: left;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" style="max-width: 400px; margin: 0 auto; background: #f9f9f9; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 20px;">
+                <input type="text" name="username" placeholder="Логин" required 
+                       style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <input type="password" name="password" placeholder="Пароль" required 
+                       style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1em;">
+            </div>
+            
+            <button type="submit" style="width: 100%; background: #6a1b9a; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; margin-top: 10px;">
+                Войти
+            </button>
+        </form>
+
+        <p style="margin-top: 30px; font-size: 0.9em; color: #777;">
+            Если вы забыли пароль — обратитесь к администратору.
+        </p>
+    </div>
 {% endblock %}

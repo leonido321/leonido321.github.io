@@ -9,6 +9,10 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User
 from .models import Task, Prize, UserProfile, Battle, BattleType, BattleResult, PerformanceData, Notification, Purchase, TaskCompletion
 from .forms import PerformanceDataForm
+from django.contrib.auth import logout
+from django.shortcuts import render, redirect
+
+
 
 
 @login_required
@@ -59,7 +63,6 @@ def index(request):
 
 @login_required
 def complete_task(request, task_id):
-    """Выполнение задания и начисление звезд"""
     task = get_object_or_404(Task, id=task_id)
     profile = UserProfile.objects.get(user=request.user)
     
@@ -270,3 +273,7 @@ def notifications(request):
     """Уведомления"""
     all_notifications = Notification.objects.filter(is_active=True).order_by('-created_at')
     return render(request, 'gamification/notifications.html', {'notifications': all_notifications})
+
+def custom_logout(request):
+    logout(request)
+    return render(request, 'gamification/logout.html')
