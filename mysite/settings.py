@@ -126,9 +126,5 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'gamification:profile'  
 LOGOUT_REDIRECT_URL = 'login'
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
-
-# Включение WhiteNoise для обслуживания статических файлов
-MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+YANDEX_CLOUD_SERVICE_ACCOUNT_KEY_PATH = os.path.join(BASE_DIR, 'gamification', 'keys', 'service-account-key.json')
+DATALENS_DASHBOARD_ID = 'pm0pl4fp0mq8a'
