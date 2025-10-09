@@ -289,14 +289,14 @@ def get_iam_token():
     key_json = os.getenv('YANDEX_CLOUD_SERVICE_ACCOUNT_KEY')
     
     if not key_json:
-        raise ImproperlyConfigured("YANDEX_CLOUD_SERVICE_ACCOUNT_KEY должна быть настроена в переменных окружения")
+        raise Exception("YANDEX_CLOUD_SERVICE_ACCOUNT_KEY должна быть настроена в переменных окружения")
     
     try:
         key_data = json.loads(key_json)
     except json.JSONDecodeError:
-        raise ImproperlyConfigured("Неверный формат ключа в переменной окружения")
+        raise Exception("Неверный формат ключа в переменной окружения")
     
-    # Создание JWT-токена
+    # Создание JWT-токена с указанием kid в заголовке
     now = int(time.time())
     payload = {
         'iss': key_data['service_account_id'],  # ID сервисного аккаунта
@@ -305,8 +305,13 @@ def get_iam_token():
         'exp': now + 3600  # Токен действителен 1 час
     }
     
-    # Кодирование JWT с использованием закрытого ключа
-    token = jwt.encode(payload, key_data['private_key'], algorithm='PS256')
+    # Указываем kid в заголовке JWT
+    headers = {
+        'kid': key_data['id']  # Используем id ключа из JSON
+    }
+    
+    # Кодирование JWT с использованием закрытого ключа и заголовка
+    token = jwt.encode(payload, key_data['private_key'], algorithm='PS256', headers=headers)
     
     # Обмен JWT на IAM-токен
     response = requests.post(
