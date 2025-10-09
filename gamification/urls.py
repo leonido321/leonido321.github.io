@@ -16,4 +16,5 @@ urlpatterns = [
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('notifications/', views.notifications, name='notifications'),
     path('logout/', views.custom_logout, name='logout'),
+    path('test-datalens/', views.test_datalens_connection, name='test_datalens'),
 ]

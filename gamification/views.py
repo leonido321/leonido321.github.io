@@ -309,3 +309,36 @@ def get_iam_token():
         return response.json()['iamToken']
     else:
         raise Exception(f'Ошибка получения IAM-токена: {response.status_code} - {response.text}')
+
+@login_required
+def test_datalens_connection(request):
+    if not request.user.is_staff:
+        return redirect('gamification:home')
+    
+    try:
+        # Получаем IAM-токен
+        iam_token = get_iam_token()
+        
+        # Получаем ID дашборда из переменной окружения
+        dashboard_id = os.getenv('DATALENS_DASHBOARD_ID')
+        if not dashboard_id:
+            raise Exception("DATALENS_DASHBOARD_ID не установлена в переменных окружения")
+        
+        headers = {
+            'Authorization': f'Bearer {iam_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f'https://datalens.yandexcloud.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            messages.success(request, '✅ Подключение к DataLens успешно!')
+            messages.info(request, f'Получено {len(response.text)} символов данных')
+        else:
+            messages.error(request, f'❌ Ошибка при получении данных: {response.status_code}')
+            
+    except Exception as e:
+        messages.error(request, f'❌ Ошибка: {str(e)}')
+    
+    return redirect('gamification:profile')
