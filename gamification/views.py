@@ -154,8 +154,7 @@ def import_performance_data(request):
             'Content-Type': 'application/json'
         }
         
-        url = f'https://datalens.yandexcloud.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
-        response = requests.get(url, headers=headers)
+        url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
         
         if response.status_code != 200:
             raise Exception(f'Ошибка при получении данных: {response.status_code} - {response.text}')
@@ -329,8 +328,7 @@ def test_datalens_connection(request):
             'Content-Type': 'application/json'
         }
         
-        url = f'https://datalens.yandexcloud.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
-        response = requests.get(url, headers=headers)
+        url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
         
         if response.status_code == 200:
             messages.success(request, '✅ Подключение к DataLens успешно!')
