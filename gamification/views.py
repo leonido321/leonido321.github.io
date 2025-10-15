@@ -1,23 +1,19 @@
 import os
 import csv
-import re
 import json
 import jwt
 import time
 import requests
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.files.storage import default_storage
 from django.utils import timezone
-from django.contrib.auth import views as auth_views
-from django.contrib.auth.models import User
-from .models import Task, Prize, UserProfile, Battle, BattleType, BattleResult, PerformanceData, Notification, Purchase, TaskCompletion, Group, Level, UserProgress
-from .forms import PerformanceDataForm
 from django.contrib.auth import logout
-from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from .models import (
+    Task, Prize, UserProfile, Battle, BattleResult,
+    Notification, Purchase, TaskCompletion, Level, UserProgress
+)
 
 
 @login_required
@@ -53,6 +49,7 @@ def profile(request):
         'progress_percent': progress_percent,
         'purchased_prizes': purchased_prizes
     })
+
 
 def home(request):
     """Главная страница — всегда отображается"""
@@ -135,16 +132,51 @@ def purchase_prize(request, prize_id):
     return redirect('gamification:shop')
 
 
+def get_iam_token():
+    """
+    Получение IAM-токена с использованием JSON-ключа из переменной окружения
+    """
+    key_json = os.getenv('YANDEX_CLOUD_SERVICE_ACCOUNT_KEY')
+    if not key_json:
+        raise Exception("YANDEX_CLOUD_SERVICE_ACCOUNT_KEY должна быть настроена в переменных окружения")
+    
+    try:
+        key_data = json.loads(key_json)
+    except json.JSONDecodeError:
+        raise Exception("Неверный формат ключа в переменной окружения")
+    
+    now = int(time.time())
+    payload = {
+        'iss': key_data['service_account_id'],
+        'aud': 'https://iam.api.cloud.yandex.net/iam/v1/tokens',  # ← пробелы удалены
+        'iat': now,
+        'exp': now + 3600
+    }
+    
+    headers = {
+        'kid': key_data['id']
+    }
+    
+    token = jwt.encode(payload, key_data['private_key'], algorithm='PS256', headers=headers)
+    
+    response = requests.post(
+        'https://iam.api.cloud.yandex.net/iam/v1/tokens',  # ← пробелы удалены
+        json={'jwt': token}
+    )
+    
+    if response.status_code == 200:
+        return response.json()['iamToken']
+    else:
+        raise Exception(f'Ошибка получения IAM-токена: {response.status_code} - {response.text}')
+
+
 @login_required
 def import_performance_data(request):
     if not request.user.is_staff:
         return redirect('gamification:home')
     
     try:
-        # Получаем IAM-токен
         iam_token = get_iam_token()
-        
-        # Получаем ID дашборда из переменной окружения
         dashboard_id = os.getenv('DATALENS_DASHBOARD_ID')
         if not dashboard_id:
             raise Exception("DATALENS_DASHBOARD_ID не установлена в переменных окружения")
@@ -154,24 +186,16 @@ def import_performance_data(request):
             'Content-Type': 'application/json'
         }
         
-        url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
+        url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'  # ← пробелы удалены
         
-        response = None
-try:
-    response = requests.get(url, headers=headers, timeout=30)
-    if response.status_code != 200:
-        raise Exception(f'Ошибка при получении данных: {response.status_code} - {response.text}')
-    ...
-except Exception as e:
-    if 'response' in str(e) and 'not defined' in str(e):
-        e = "Не удалось выполнить запрос к DataLens API. Проверьте URL, сетевое соединение и IAM-токен."
-    messages.error(request, f'Ошибка при импорте данных: {str(e)}')
+        response = requests.get(url, headers=headers, timeout=30)
+        
+        if response.status_code != 200:
+            raise Exception(f'Ошибка при получении данных: {response.status_code} - {response.text}')
         
         # Обработка CSV данных
         csv_data = response.text
         from io import StringIO
-        import csv
-        
         f = StringIO(csv_data)
         reader = csv.reader(f)
         next(reader)  # пропускаем заголовок
@@ -214,6 +238,38 @@ except Exception as e:
     return redirect('gamification:profile')
 
 
+@login_required
+def test_datalens_connection(request):
+    if not request.user.is_staff:
+        return redirect('gamification:home')
+    
+    try:
+        iam_token = get_iam_token()
+        dashboard_id = os.getenv('DATALENS_DASHBOARD_ID')
+        if not dashboard_id:
+            raise Exception("DATALENS_DASHBOARD_ID не установлена в переменных окружения")
+        
+        headers = {
+            'Authorization': f'Bearer {iam_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'  # ← пробелы удалены
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            messages.success(request, '✅ Подключение к DataLens успешно!')
+            messages.info(request, f'Получено {len(response.text)} символов данных')
+        else:
+            messages.error(request, f'❌ Ошибка при получении данных: {response.status_code} — {response.text}')
+            
+    except Exception as e:
+        messages.error(request, f'❌ Ошибка: {str(e)}')
+    
+    return redirect('gamification:profile')
+
+
 def battles(request):
     """Страница батлов"""
     active_battles = Battle.objects.filter(
@@ -230,7 +286,6 @@ def battles(request):
         end_time__lt=timezone.now()
     ).order_by('-end_time')[:5]
 
-    # Добавляем результаты для каждого батла
     if request.user.is_authenticated:
         for battle in active_battles:
             battle.user_result = battle.battleresult_set.filter(user=request.user).first()
@@ -248,7 +303,6 @@ def join_battle(request, battle_id):
     battle = get_object_or_404(Battle, id=battle_id)
     battle.participants.add(request.user)
     
-    # Создаем уведомление
     Notification.objects.create(
         title=f"Вы участвуете в батле {battle.name}",
         message=f"Батл начнётся {battle.start_time.strftime('%d.%m в %H:%M')}",
@@ -270,87 +324,7 @@ def notifications(request):
     all_notifications = Notification.objects.filter(is_active=True).order_by('-created_at')
     return render(request, 'gamification/notifications.html', {'notifications': all_notifications})
 
+
 def custom_logout(request):
     logout(request)
     return render(request, 'gamification/logout.html')
-
-def get_iam_token():
-    """
-    Получение IAM-токена с использованием JSON-ключа из переменной окружения
-    """
-    # Получаем JSON-строку из переменной окружения
-    key_json = os.getenv('YANDEX_CLOUD_SERVICE_ACCOUNT_KEY')
-    
-    if not key_json:
-        raise Exception("YANDEX_CLOUD_SERVICE_ACCOUNT_KEY должна быть настроена в переменных окружения")
-    
-    try:
-        key_data = json.loads(key_json)
-    except json.JSONDecodeError:
-        raise Exception("Неверный формат ключа в переменной окружения")
-    
-    # Создание JWT-токена с указанием kid в заголовке
-    now = int(time.time())
-    payload = {
-        'iss': key_data['service_account_id'],  # ID сервисного аккаунта
-        'aud': 'https://iam.api.cloud.yandex.net/iam/v1/tokens',
-        'iat': now,
-        'exp': now + 3600  # Токен действителен 1 час
-    }
-    
-    # Указываем kid в заголовке JWT
-    headers = {
-        'kid': key_data['id']  # Используем id ключа из JSON
-    }
-    
-    # Кодирование JWT с использованием закрытого ключа и заголовка
-    token = jwt.encode(payload, key_data['private_key'], algorithm='PS256', headers=headers)
-    
-    # Обмен JWT на IAM-токен
-    response = requests.post(
-        'https://iam.api.cloud.yandex.net/iam/v1/tokens',
-        json={'jwt': token}
-    )
-    
-    if response.status_code == 200:
-        return response.json()['iamToken']
-    else:
-        raise Exception(f'Ошибка получения IAM-токена: {response.status_code} - {response.text}')
-
-@login_required
-def test_datalens_connection(request):
-    if not request.user.is_staff:
-        return redirect('gamification:home')
-    
-    try:
-        iam_token = get_iam_token()
-        dashboard_id = os.getenv('DATALENS_DASHBOARD_ID')
-        if not dashboard_id:
-            raise Exception("DATALENS_DASHBOARD_ID не установлена в переменных окружения")
-        
-        headers = {
-            'Authorization': f'Bearer {iam_token}',
-            'Content-Type': 'application/json'
-        }
-        
-        url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
-        
-        # Инициализируем response как None
-        response = None
-        
-        response = requests.get(url, headers=headers, timeout=30)  # Добавил таймаут
-        
-        if response.status_code == 200:
-            messages.success(request, '✅ Подключение к DataLens успешно!')
-            messages.info(request, f'Получено {len(response.text)} символов данных')
-        else:
-            messages.error(request, f'❌ Ошибка при получении данных: {response.status_code} — {response.text}')
-            
-    except Exception as e:
-        # Если ошибка произошла до или во время запроса — response может быть None
-        error_msg = str(e)
-        if 'response' in error_msg and 'not defined' in error_msg:
-            error_msg = "Не удалось выполнить запрос к DataLens API. Проверьте URL, сетевое соединение и IAM-токен."
-        messages.error(request, f'❌ Ошибка: {error_msg}')
-    
-    return redirect('gamification:profile')
