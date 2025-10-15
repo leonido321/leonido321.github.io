@@ -156,8 +156,16 @@ def import_performance_data(request):
         
         url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
         
-        if response.status_code != 200:
-            raise Exception(f'Ошибка при получении данных: {response.status_code} - {response.text}')
+        response = None
+try:
+    response = requests.get(url, headers=headers, timeout=30)
+    if response.status_code != 200:
+        raise Exception(f'Ошибка при получении данных: {response.status_code} - {response.text}')
+    ...
+except Exception as e:
+    if 'response' in str(e) and 'not defined' in str(e):
+        e = "Не удалось выполнить запрос к DataLens API. Проверьте URL, сетевое соединение и IAM-токен."
+    messages.error(request, f'Ошибка при импорте данных: {str(e)}')
         
         # Обработка CSV данных
         csv_data = response.text
@@ -315,10 +323,7 @@ def test_datalens_connection(request):
         return redirect('gamification:home')
     
     try:
-        # Получаем IAM-токен
         iam_token = get_iam_token()
-        
-        # Получаем ID дашборда из переменной окружения
         dashboard_id = os.getenv('DATALENS_DASHBOARD_ID')
         if not dashboard_id:
             raise Exception("DATALENS_DASHBOARD_ID не установлена в переменных окружения")
@@ -330,13 +335,22 @@ def test_datalens_connection(request):
         
         url = f'https://datalens.api.cloud.yandex.net/api/datalens/v1/dashboards/{dashboard_id}/export?format=csv'
         
+        # Инициализируем response как None
+        response = None
+        
+        response = requests.get(url, headers=headers, timeout=30)  # Добавил таймаут
+        
         if response.status_code == 200:
             messages.success(request, '✅ Подключение к DataLens успешно!')
             messages.info(request, f'Получено {len(response.text)} символов данных')
         else:
-            messages.error(request, f'❌ Ошибка при получении данных: {response.status_code}')
+            messages.error(request, f'❌ Ошибка при получении данных: {response.status_code} — {response.text}')
             
     except Exception as e:
-        messages.error(request, f'❌ Ошибка: {str(e)}')
+        # Если ошибка произошла до или во время запроса — response может быть None
+        error_msg = str(e)
+        if 'response' in error_msg and 'not defined' in error_msg:
+            error_msg = "Не удалось выполнить запрос к DataLens API. Проверьте URL, сетевое соединение и IAM-токен."
+        messages.error(request, f'❌ Ошибка: {error_msg}')
     
     return redirect('gamification:profile')
